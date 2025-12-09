@@ -4,28 +4,27 @@ from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 import os
 
-# Load .env so GROQ_API_KEY is available
+# Load environment variables
 load_dotenv()
 
-# Step1: Setup LLM (Use DeepSeek-distill with Groq)
+# Step 1: Setup LLM using Groq
 llm_model = ChatGroq(
     groq_api_key=os.getenv("GROQ_API_KEY"),
-    model = ChatGroq(model="llama-3.1-8b-instant"),
+    model="llama-3.1-8b-instant",   # <-- FIXED
     temperature=0.2
 )
 
-# Step2: Retrieve Docs
+# Step 2: Retrieve Docs
 def retrieve_docs(query):
     return faiss_db.similarity_search(query)
 
 def get_context(documents):
     return "\n\n".join([doc.page_content for doc in documents])
 
-# Step3: Answer Question
+# Step 3: Prompt Template
 custom_prompt_template = """
-Use the pieces of information provided in the context to answer the user's question.
-If you don't know the answer, say "I don't know".
-Don't create or assume info outside the context.
+Use ONLY the context to answer the user's question.
+If the answer is not in the context, say "I don't know".
 
 Question: {question}
 
@@ -42,5 +41,5 @@ def answer_query(documents, model, query):
 
     response = chain.invoke({"question": query, "context": context})
 
-    # Extract only the answer text:
+    # Return the clean text from the model response
     return response.content
