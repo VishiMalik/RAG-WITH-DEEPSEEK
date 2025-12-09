@@ -1,21 +1,50 @@
-from rag_pipeline import answer_query, retrieve_docs, llm_model
-
 import streamlit as st
-# Step 1: Setup upload PDF functionality
-uploaded_file=st.file_uploader("Upload PDF", type='PDF', accept_multiple_files=False)
+from rag_pipeline import process_pdf, retrieve_docs, answer_query, llm_model
 
-  
-# Step 2: Chatbot Skeleton (Question and Answer)
+st.title("Vishi's AI Lawyer Chatbot")
 
-user_query=st.text_area("Enter your prompt: ", height=150, placeholder="Ask Anything!")
-ask_question=st.button("Ask from Vishi's Chatbot")
-if ask_question:
+# -------- Step 1: Upload PDF --------
+uploaded_file = st.file_uploader("Upload a PDF file", type=["pdf"])
 
-  st.chat_message("user").write(user_query)
+# -------- Step 2: User Query --------
+user_query = st.text_area(
+    "Enter your prompt:",
+    height=150,
+    placeholder="Ask anything from the uploaded PDF..."
+)
 
-  # RAG Pipeline
-  retrieved_docs=retrieve_docs(user_query)
-  response=answer_query(documents=retrieved_docs, model=llm_model, query=user_query)
-  st.chat_message("AI Lawyer").write(response)
-else:
-  st.error("Kindly upload a valid file first.")
+if st.button("Ask Vishi's Chatbot"):
+
+    # Validate PDF
+    if not uploaded_file:
+        st.error("Please upload a PDF first.")
+        st.stop()
+
+    # Validate question
+    if not user_query.strip():
+        st.error("Please enter a valid question.")
+        st.stop()
+
+    # Show on chat window
+    st.chat_message("user").write(user_query)
+
+    # -------- RAG Pipeline --------
+    try:
+        # 1. Process PDF → Build FAISS DB
+        faiss_db = process_pdf(uploaded_file)
+
+        # 2. Retrieve relevant chunks
+        docs = retrieve_docs(user_query, faiss_db)
+
+        if not docs:
+            st.warning("No relevant information found in the document.")
+            st.stop()
+
+        # 3. Generate answer
+        response = answer_query(docs, llm_model, user_query)
+
+        # 4. Show answer
+        st.chat_message("assistant").write(response)
+
+    except Exception as e:
+        st.error(f"Error: {str(e)}")
