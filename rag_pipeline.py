@@ -10,7 +10,7 @@ load_dotenv()
 # Step1: Setup LLM (Use DeepSeek-distill with Groq)
 llm_model = ChatGroq(
     groq_api_key=os.getenv("GROQ_API_KEY"),
-    model="deepseek-r1-distill-llama-70b",
+    model = ChatGroq(model="llama-3.1-8b-instant"),
     temperature=0.2
 )
 
